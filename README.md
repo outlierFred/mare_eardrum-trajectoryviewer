@@ -51,3 +51,4 @@ Messages preserve line breaks, indentation, and Markdown text as written.
 **An attempt cannot be opened:** The file must contain valid trajectory JSON with a `steps` array of step objects. Other attempts can still be viewed.
 
 **Files changed on disk:** Select the folder again to load the updated files.
+# mare_eardrum-trajectoryviewer
