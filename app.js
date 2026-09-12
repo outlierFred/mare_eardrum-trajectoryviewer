@@ -157,14 +157,8 @@ function discover(files) {
 }
 function renderModels(models) {
   objectURLs.splice(0).forEach(url => URL.revokeObjectURL(url));
-  for (const id of ['overview', 'navigator', 'models', 'status']) $('#' + id).replaceChildren();
+  for (const id of ['navigator', 'models', 'status']) $('#' + id).replaceChildren();
   const attempts = models.flatMap(model => model.attempts);
-  const stats = [['Models', models.length], ['Attempts', attempts.length], ['Reading', 'On demand'], ['Data stays', 'On your device']];
-  for (const [label, value] of stats) {
-    const stat = el('div', 'stat');
-    stat.append(el('span', '', label), el('strong', '', typeof value === 'number' ? number(value) : value));
-    $('#overview').append(stat);
-  }
   $('#dataset-label').textContent = 'runs / adaptive-predicate-ordering';
   if (!attempts.length) $('#status').append(el('div', 'notice', 'No matching attempts found. Select runs/ containing adaptive-predicate-ordering/<model>/prior/attempt-01-trajectory.json.'));
   const sections = [];
