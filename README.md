@@ -34,9 +34,9 @@ Otherwise, it shows the first four folders alphabetically. Completely empty fold
 
 ## Explore a trajectory
 
-- **Filter by model** using the buttons above the trajectories.
-- **Expand or collapse attempts** by clicking their headings. Use **Collapse all** to close every attempt.
-- **Review session details** at the top of an expanded attempt, including the model, agent, cost, and step counts. Included steps are those present in the file; reported steps are the total recorded by the run.
+- **Navigate models and attempts** in the sidebar. Select an attempt to open it and jump to its timeline, select **All attempts** under a model to browse that model, or select **All models** to see everything. Model groups in the sidebar can be expanded or collapsed.
+- **Expand or collapse attempts** by clicking their headings.
+- **Review session details** at the top of an expanded attempt, including the model, agent, and step counts. Included steps are those present in the file; reported steps are the total recorded by the run.
 - **Read messages** in their original step order. Expand reasoning, tool arguments, and results as needed.
 - **Search an attempt** across its messages, tools, and other fields, or filter steps by source. Search includes steps that have not yet been displayed.
 - **Load more steps** to continue beyond the first 50. Use **Show full content** to remove the height limit on long messages.
@@ -51,4 +51,3 @@ Messages preserve line breaks, indentation, and Markdown text as written.
 **An attempt cannot be opened:** The file must contain valid trajectory JSON with a `steps` array of step objects. Other attempts can still be viewed.
 
 **Files changed on disk:** Select the folder again to load the updated files.
-# mare_eardrum-trajectoryviewer

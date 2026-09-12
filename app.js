@@ -1,8 +1,7 @@
 'use strict';
 const $ = (selector, root = document) => root.querySelector(selector);
 const number = value => typeof value === 'number' ? value.toLocaleString('en-US') : '—';
-const money = value => typeof value === 'number' ? `$${value.toFixed(3)}` : '—';
-const asText = value => typeof value === 'string' ? value : JSON.stringify(value, null, 2) ?? '';
+const asText = value => typeof value === 'string' ? value : JSON.stringify(value, (key, item) => /(^|_)cost(s)?(_|$)/i.test(key) ? undefined : item, 2) ?? '';
 function el(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -67,7 +66,7 @@ function renderReader(body, doc, attempt) {
   body.replaceChildren();
   const agent = doc.agent || {}, metrics = doc.final_metrics || {};
   const meta = el('div', 'metadata');
-  meta.append(field('Model', agent.model_name), field('Agent / version', [agent.name, agent.version].filter(Boolean).join(' / ')), field('Schema', doc.schema_version), field('Session', doc.session_id), field('Included / reported steps', `${doc.steps.length} / ${metrics.total_steps ?? '—'}`), field('Total cost', money(metrics.total_cost_usd)));
+  meta.append(field('Model', agent.model_name), field('Agent / version', [agent.name, agent.version].filter(Boolean).join(' / ')), field('Schema', doc.schema_version), field('Session', doc.session_id), field('Included / reported steps', `${doc.steps.length} / ${metrics.total_steps ?? '—'}`));
   body.append(meta);
   body.append(disclosure('Session metadata & final metrics', Object.fromEntries(Object.entries(doc).filter(([key]) => key !== 'steps'))));
   const controls = el('div', 'reader-tools');
@@ -83,7 +82,7 @@ function renderReader(body, doc, attempt) {
   controls.append(search, source, button('Expand steps', () => setOpen(true)), button('Collapse steps', () => setOpen(false)), download);
   const count = el('div', 'step-count'); count.setAttribute('role', 'status'); body.append(controls, count, list);
   // Render in batches; neither attempt count nor step count is hard-coded.
-  const searchIndex = doc.steps.map(s => JSON.stringify(s).toLowerCase());
+  const searchIndex = doc.steps.map(s => asText(s).toLowerCase());
   let matches = [], shown = 0;
   const more = button('Load more steps', () => appendBatch());
   function appendBatch() {
@@ -122,7 +121,7 @@ function attemptNode(attempt) {
       validateTrajectory(doc);
       if (!card.isConnected) return;
       renderReader(body, doc, attempt); loaded = true;
-      stats.replaceChildren(el('span', '', `${number(doc.steps.length)} steps`), el('span', '', `${number(doc.final_metrics?.total_completion_tokens)} output tokens`), el('span', '', money(doc.final_metrics?.total_cost_usd)));
+      stats.replaceChildren(el('span', '', `${number(doc.steps.length)} steps`), el('span', '', `${number(doc.final_metrics?.total_completion_tokens)} output tokens`));
     } catch (error) {
       body.replaceChildren(el('div', 'notice error', `Could not load this attempt: ${error.message}`), button('Retry', load));
     } finally { loading = false; }
@@ -158,7 +157,7 @@ function discover(files) {
 }
 function renderModels(models) {
   objectURLs.splice(0).forEach(url => URL.revokeObjectURL(url));
-  for (const id of ['overview', 'tabs', 'models', 'status']) $('#' + id).replaceChildren();
+  for (const id of ['overview', 'navigator', 'models', 'status']) $('#' + id).replaceChildren();
   const attempts = models.flatMap(model => model.attempts);
   const stats = [['Models', models.length], ['Attempts', attempts.length], ['Reading', 'On demand'], ['Data stays', 'On your device']];
   for (const [label, value] of stats) {
@@ -169,18 +168,42 @@ function renderModels(models) {
   $('#dataset-label').textContent = 'runs / adaptive-predicate-ordering';
   if (!attempts.length) $('#status').append(el('div', 'notice', 'No matching attempts found. Select runs/ containing adaptive-predicate-ordering/<model>/prior/attempt-01-trajectory.json.'));
   const sections = [];
-  models.forEach(model => {
+  const links = [];
+  function select(link, modelIndex) {
+    sections.forEach((section, index) => { section.hidden = modelIndex !== null && index !== modelIndex; });
+    links.forEach(node => node.removeAttribute('aria-current'));
+    link.setAttribute('aria-current', 'true');
+  }
+  const all = button('All models', () => select(all, null));
+  all.className = 'nav-all'; all.setAttribute('aria-current', 'true');
+  links.push(all); $('#navigator').append(all);
+  models.forEach((model, modelIndex) => {
     const section = el('section', 'model'); const title = el('div', 'model-title');
     title.append(el('span', 'dot'), el('h3', '', model.name), el('span', 'count', `${model.attempts.length} attempts`)); section.append(title);
-    model.attempts.forEach(attempt => section.append(attemptNode(attempt)));
+    const group = el('details', 'nav-group'); group.open = true;
+    const heading = el('summary', '', model.name); group.append(heading);
+    const modelLink = button(`All attempts (${model.attempts.length})`, () => {
+      select(modelLink, modelIndex);
+      section.scrollIntoView({block: 'start'});
+    });
+    modelLink.className = 'nav-model'; links.push(modelLink); group.append(modelLink);
+    model.attempts.forEach((attempt, attemptIndex) => {
+      const card = attemptNode(attempt); card.id = `attempt-${modelIndex}-${attemptIndex}`;
+      section.append(card);
+      const match = attempt.name.match(/attempt-(\d+)/);
+      const link = button(match ? `Attempt ${match[1]}` : attempt.name, () => {
+        select(link, modelIndex);
+        card.open = true;
+        card.scrollIntoView({block: 'start'});
+        $('summary', card).focus({preventScroll: true});
+      });
+      link.className = 'nav-attempt'; link.title = attempt.name;
+      link.setAttribute('aria-controls', card.id);
+      link.setAttribute('aria-label', `${model.name} · ${attempt.name}`);
+      links.push(link); group.append(link);
+    });
     if (!model.attempts.length) section.append(el('div', 'notice', 'No attempt files in this model’s prior/ directory.'));
-    $('#models').append(section); sections.push(section);
-  });
-  ['All models', ...models.map(model => model.name)].forEach((name, i) => {
-    const tab = button(name, () => {
-      sections.forEach((section, j) => { section.hidden = i !== 0 && j !== i - 1; });
-      $('#tabs').querySelectorAll('button').forEach(node => node.setAttribute('aria-pressed', String(node === tab)));
-    }); tab.setAttribute('aria-pressed', String(i === 0)); $('#tabs').append(tab);
+    $('#models').append(section); sections.push(section); $('#navigator').append(group);
   });
 }
 function init() {
@@ -192,6 +215,5 @@ function init() {
     $('#choose-folder').textContent = 'Choose another folder';
     event.target.value = '';
   });
-  $('#collapse').addEventListener('click', () => document.querySelectorAll('.attempt').forEach(card => { card.open = false; }));
 }
 init();
