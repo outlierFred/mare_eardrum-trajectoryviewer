@@ -33,7 +33,7 @@ function field(label, value) {
   const item = el('div'); item.append(el('div', 'meta-label', label), el('div', 'meta-value', value == null ? '—' : asText(value))); return item;
 }
 function stepNode(step, index) {
-  const card = el('details', 'step'); card.open = true;
+  const card = el('details', 'step'); card.open = false;
   const summary = el('summary'); const source = step.source || 'unknown';
   summary.append(el('span', 'step-number', `STEP ${step.step_id ?? index + 1}`), el('span', `role ${['user', 'system'].includes(source) ? source : ''}`, source));
   if (step.tool_calls?.length) summary.append(el('span', 'muted', `${step.tool_calls.length} tool call${step.tool_calls.length === 1 ? '' : 's'}`));
@@ -75,33 +75,33 @@ function renderReader(body, doc, attempt) {
   const all = el('option', '', 'All sources'); all.value = ''; source.append(all);
   [...new Set(doc.steps.map(s => s.source || 'unknown'))].forEach(s => { const option = el('option', '', s); option.value = s; source.append(option); });
   const list = el('div');
-  const setOpen = state => list.querySelectorAll('.step').forEach(node => { node.open = state; });
+  const setOpen = state => list.querySelectorAll('.step').forEach(node => { if (!node.hidden) node.open = state; });
   const download = el('a', '', 'Download JSON');
   const url = URL.createObjectURL(attempt.file); objectURLs.push(url);
   download.href = url; download.download = attempt.name;
   controls.append(search, source, button('Expand steps', () => setOpen(true)), button('Collapse steps', () => setOpen(false)), download);
   const count = el('div', 'step-count'); count.setAttribute('role', 'status'); body.append(controls, count, list);
-  // Render in batches; neither attempt count nor step count is hard-coded.
   const searchIndex = doc.steps.map(s => asText(s).toLowerCase());
-  let matches = [], shown = 0;
-  const more = button('Load more steps', () => appendBatch());
-  function appendBatch() {
-    const end = Math.min(shown + 50, matches.length);
-    const fragment = document.createDocumentFragment();
-    for (; shown < end; shown++) { const index = matches[shown]; fragment.append(stepNode(doc.steps[index], index)); }
-    list.append(fragment); more.hidden = shown >= matches.length;
-    more.textContent = `Load next ${Math.min(50, matches.length - shown)} steps`;
-    count.textContent = `${shown} of ${matches.length} matching steps · ${doc.steps.length} included in file · original order`;
-  }
+  const cards = doc.steps.map((step, index) => stepNode(step, index));
+  const fragment = document.createDocumentFragment();
+  cards.forEach(card => fragment.append(card));
+  list.append(fragment);
+  const empty = el('div', 'empty', 'No steps match these filters.');
+  list.append(empty);
   function filter() {
     const query = search.value.trim().toLowerCase();
-    matches = doc.steps.map((_, i) => i).filter(i => (!source.value || (doc.steps[i].source || 'unknown') === source.value) && (!query || searchIndex[i].includes(query)));
-    shown = 0; list.replaceChildren(); appendBatch();
-    if (!matches.length) list.append(el('div', 'empty', 'No steps match these filters.'));
+    let matching = 0;
+    cards.forEach((card, index) => {
+      const step = doc.steps[index];
+      card.hidden = !((!source.value || (step.source || 'unknown') === source.value) && (!query || searchIndex[index].includes(query)));
+      if (!card.hidden) matching++;
+    });
+    empty.hidden = matching > 0;
+    count.textContent = `${matching} of ${doc.steps.length} steps · original order`;
   }
   let debounce;
   search.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(filter, 150); });
-  source.addEventListener('change', filter); body.append(more); filter();
+  source.addEventListener('change', filter); filter();
 }
 function attemptNode(attempt) {
   const card = el('details', 'attempt'); const summary = el('summary');
