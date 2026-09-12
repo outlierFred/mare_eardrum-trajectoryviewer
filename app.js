@@ -140,10 +140,9 @@ function discover(files) {
   const groups = new Map();
   for (const file of files) {
     const parts = file.webkitRelativePath.split('/');
-    // Accept runs/ itself or its adaptive-predicate-ordering/ child.
-    const base = parts[0] === 'runs' && parts[1] === 'adaptive-predicate-ordering' ? 2
-      : parts[0] === 'adaptive-predicate-ordering' ? 1 : -1;
-    if (base < 0 || parts.length <= base + 1 || parts[base].startsWith('.')) continue;
+    // The dataset folder name is arbitrary; accept runs/ or the dataset itself.
+    const base = parts[0] === 'runs' ? 2 : 1;
+    if (parts.length <= base + 1 || parts[base].startsWith('.')) continue;
     const model = parts[base];
     if (!groups.has(model)) groups.set(model, []);
     const match = file.name.match(/^attempt-(\d+)-trajectory\.json$/);
@@ -159,8 +158,8 @@ function renderModels(models) {
   objectURLs.splice(0).forEach(url => URL.revokeObjectURL(url));
   for (const id of ['navigator', 'models', 'status']) $('#' + id).replaceChildren();
   const attempts = models.flatMap(model => model.attempts);
-  $('#dataset-label').textContent = 'runs / adaptive-predicate-ordering';
-  if (!attempts.length) $('#status').append(el('div', 'notice', 'No matching attempts found. Select runs/ containing adaptive-predicate-ordering/<model>/prior/attempt-01-trajectory.json.'));
+  $('#dataset-label').textContent = '';
+  if (!attempts.length) $('#status').append(el('div', 'notice', 'No matching attempts found. Select runs/ containing <dataset>/<model>/prior/attempt-01-trajectory.json, or select the dataset folder directly.'));
   const sections = [];
   const links = [];
   function select(link, modelIndex) {
@@ -206,6 +205,11 @@ function init() {
     const files = [...event.target.files];
     if (!files.length) return;
     renderModels(discover(files));
+    const folders = [...new Set(files.map(file => {
+      const parts = file.webkitRelativePath.split('/');
+      return parts.slice(0, parts[0] === 'runs' ? 2 : 1).join(' / ');
+    }))];
+    $('#dataset-label').textContent = folders.join(', ');
     $('#choose-folder').textContent = 'Choose another folder';
     event.target.value = '';
   });

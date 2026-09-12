@@ -8,7 +8,7 @@ Explore model runs as readable timelines of messages, tool calls, and results. C
 2. Click **Choose runs folder** and select your local `runs/` folder.
 3. Expand an attempt to read its trajectory.
 
-You can also select the `adaptive-predicate-ordering/` folder directly. To switch datasets, click **Choose another folder**.
+The folder immediately inside `runs/` can have any name. You can also select that dataset folder directly. To switch datasets, click **Choose another folder**.
 
 Your files stay on your device. The viewer reads them locally without uploading them to a server. Refreshing the page clears your selection. Sharing the viewer’s link does not share your files; each person selects their own folder.
 
@@ -18,7 +18,7 @@ The viewer expects this folder structure:
 
 ```text
 runs/
-└── adaptive-predicate-ordering/
+└── <dataset-folder>/
     └── <model>/
         └── prior/
             ├── attempt-01-trajectory.json
@@ -46,7 +46,7 @@ Messages preserve line breaks, indentation, and Markdown text as written.
 
 ## Troubleshooting
 
-**No attempts found:** Check that you selected `runs/` or `adaptive-predicate-ordering/`, and that files are inside each model’s `prior/` folder with names such as `attempt-01-trajectory.json`.
+**No attempts found:** Check that you selected `runs/` or the dataset folder inside it, and that files are inside each model’s `prior/` folder with names such as `attempt-01-trajectory.json`.
 
 **An attempt cannot be opened:** The file must contain valid trajectory JSON with a `steps` array of step objects. Other attempts can still be viewed.
 
