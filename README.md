@@ -28,14 +28,9 @@ runs/
 
 Each model can have any number of attempts. Attempts appear in numeric order.
 
-When these four model folders are present, the viewer shows them in this order:
+When the four model folders are present, the viewer shows them in this order:
 
-- `claude-code-claude-haiku-4-5`
-- `claude-code-claude-opus-5`
-- `claude-code-claude-muse-spark-1.2`
-- `codex-gpt-5.6-sol`
-
-Otherwise, it shows the first four model folders alphabetically. Completely empty folders are not detected.
+Otherwise, it shows the first four folders alphabetically. Completely empty folders are not detected.
 
 ## Explore a trajectory
 
