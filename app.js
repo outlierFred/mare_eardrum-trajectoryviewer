@@ -103,6 +103,40 @@ function renderReader(body, doc, attempt) {
   search.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(filter, 150); });
   source.addEventListener('change', filter); filter();
 }
+function markdownViewer(text, emptyMessage = 'This summary is empty.') {
+  const wrapper = el('div');
+  const controls = el('div', 'summary-tools');
+  const label = el('label', 'markdown-toggle');
+  const toggle = el('input'); toggle.type = 'checkbox'; toggle.checked = true;
+  label.append(toggle, document.createTextNode('Markdown formatting'));
+  const content = el('div', 'summary-content');
+  const canFormat = !!(globalThis.marked && globalThis.DOMPurify);
+  toggle.disabled = !canFormat; toggle.checked = canFormat;
+  function render() {
+    content.replaceChildren();
+    if (!text.trim()) { content.append(el('div', 'notice', emptyMessage)); return; }
+    if (toggle.checked) {
+      const formatted = el('div', 'markdown-body');
+      formatted.append(DOMPurify.sanitize(marked.parse(text), {
+        RETURN_DOM_FRAGMENT: true,
+        ALLOWED_TAGS: ['p', 'br', 'hr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'em', 'del', 's', 'blockquote', 'ul', 'ol', 'li', 'pre', 'code', 'a', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'input'],
+        ALLOWED_ATTR: ['href', 'title', 'start', 'align', 'type', 'checked', 'disabled'],
+      }));
+      formatted.querySelectorAll('input').forEach(input => { input.type = 'checkbox'; input.disabled = true; });
+      formatted.querySelectorAll('a').forEach(link => {
+        const href = link.getAttribute('href') || '';
+        if (!/^(https?:\/\/|mailto:)/i.test(href)) link.removeAttribute('href');
+        else { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
+      });
+      content.append(formatted);
+    } else content.append(el('pre', 'summary-raw', text));
+  }
+  toggle.addEventListener('change', render);
+  controls.append(label);
+  wrapper.append(controls, content);
+  if (!canFormat) controls.append(el('span', 'muted', 'Markdown formatting unavailable; showing original text.'));
+  render(); return wrapper;
+}
 function summaryNode(attempt) {
   const card = el('details', 'attempt attempt-summary');
   const heading = el('summary');
@@ -121,37 +155,7 @@ function summaryNode(attempt) {
     try {
       const text = await attempt.summaryFile.text();
       if (!card.isConnected) return;
-      const controls = el('div', 'summary-tools');
-      const label = el('label', 'markdown-toggle');
-      const toggle = el('input'); toggle.type = 'checkbox'; toggle.checked = true;
-      label.append(toggle, document.createTextNode('Markdown formatting'));
-      const content = el('div', 'summary-content');
-      const canFormat = !!(globalThis.marked && globalThis.DOMPurify);
-      toggle.disabled = !canFormat; toggle.checked = canFormat;
-      function render() {
-        content.replaceChildren();
-        if (!text.trim()) { content.append(el('div', 'notice', 'This summary is empty.')); return; }
-        if (toggle.checked) {
-          const formatted = el('div', 'markdown-body');
-          formatted.append(DOMPurify.sanitize(marked.parse(text), {
-            RETURN_DOM_FRAGMENT: true,
-            ALLOWED_TAGS: ['p', 'br', 'hr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'em', 'del', 's', 'blockquote', 'ul', 'ol', 'li', 'pre', 'code', 'a', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'input'],
-            ALLOWED_ATTR: ['href', 'title', 'start', 'align', 'type', 'checked', 'disabled'],
-          }));
-          formatted.querySelectorAll('input').forEach(input => { input.type = 'checkbox'; input.disabled = true; });
-          formatted.querySelectorAll('a').forEach(link => {
-            const href = link.getAttribute('href') || '';
-            if (!/^(https?:\/\/|mailto:)/i.test(href)) link.removeAttribute('href');
-            else { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
-          });
-          content.append(formatted);
-        } else content.append(el('pre', 'summary-raw', text));
-      }
-      toggle.addEventListener('change', render);
-      controls.append(label);
-      body.replaceChildren(controls, content);
-      if (!canFormat) controls.append(el('span', 'muted', 'Markdown formatting unavailable; showing original text.'));
-      render(); loaded = true;
+      body.replaceChildren(markdownViewer(text)); loaded = true;
     } catch (error) {
       body.replaceChildren(el('div', 'notice error', `Could not load this summary: ${error.message}`), button('Retry', load));
     } finally { loading = false; }
@@ -221,6 +225,7 @@ function renderModels(models) {
   const sections = [];
   const links = [];
   function select(link, modelIndex) {
+    selectView('trajectories');
     sections.forEach((section, index) => { section.hidden = modelIndex !== null && index !== modelIndex; });
     links.forEach(node => node.removeAttribute('aria-current'));
     link.setAttribute('aria-current', 'true');
@@ -258,7 +263,102 @@ function renderModels(models) {
     $('#models').append(section); sections.push(section); $('#navigator').append(group);
   });
 }
+function feedbackEntries(doc) {
+  return doc?.metadata?.validationOutputs?.chains?.[0]?.validations?.[0]?.outputs?.feedback;
+}
+function feedbackNode(value, index) {
+  const card = el('section', 'feedback-card');
+  const title = value && typeof value === 'object' ? [value.filename, value.fileName, value.name, value.path].find(item => typeof item === 'string' && item) : '';
+  card.append(el('h3', '', `Feedback ${index + 1}${title ? ` · ${title}` : ''}`));
+  if (value === undefined || value === null) {
+    card.append(el('div', 'notice', 'This feedback entry is not present.'));
+    return card;
+  }
+  let text = value;
+  if (typeof value !== 'string') {
+    text = [value.content, value.text, value.markdown].find(item => typeof item === 'string');
+    if (text === undefined) {
+      // Preserve every field when an entry has an unfamiliar structure.
+      card.append(el('pre', 'summary-raw', JSON.stringify(value, null, 2)));
+      return card;
+    }
+    const fields = el('details', 'payload');
+    fields.append(el('summary', '', 'All feedback fields'), el('pre', '', JSON.stringify(value, null, 2)));
+    card.append(markdownViewer(text, 'This feedback entry is empty.'), fields);
+  } else card.append(markdownViewer(text, 'This feedback entry is empty.'));
+  return card;
+}
+let metadataFiles = [], metadataGeneration = 0, metadataLoaded = true;
+function setMetadataFiles(files) {
+  metadataFiles = files.slice(0, 1);
+  metadataGeneration++;
+  metadataLoaded = false;
+  $('#metadata-files').replaceChildren();
+  $('#metadata-status').textContent = 'Open the Metadata tab to read validation feedback.';
+  if (!$('#metadata-panel').hidden) loadMetadata();
+}
+async function loadMetadata() {
+  if (metadataLoaded) return;
+  metadataLoaded = true;
+  const generation = metadataGeneration;
+  let found = 0, failed = 0;
+  const status = $('#metadata-status');
+  for (let index = 0; index < metadataFiles.length; index++) {
+    status.textContent = `Checking JSON files… ${index + 1} of ${metadataFiles.length}`;
+    const file = metadataFiles[index];
+    try {
+      const doc = JSON.parse(await file.text());
+      if (generation !== metadataGeneration) return;
+      const entries = feedbackEntries(doc);
+      if (!Array.isArray(entries)) continue;
+      const group = el('section', 'metadata-file');
+      group.append(el('h3', 'metadata-filename', file.webkitRelativePath || file.name));
+      group.append(feedbackNode(entries[0], 0), feedbackNode(entries[1], 1));
+      $('#metadata-files').append(group);
+      found++;
+    } catch (error) {
+      if (generation !== metadataGeneration) return;
+      failed++;
+      const notice = el('div', 'notice error', `Could not read ${file.webkitRelativePath || file.name}: ${error.message}`);
+      $('#metadata-files').append(notice);
+    }
+  }
+  if (generation !== metadataGeneration) return;
+  status.textContent = found ? `${found} JSON file${found === 1 ? '' : 's'} with validation feedback.` : 'No validation feedback found at metadata.validationOutputs.chains[0].validations[0].outputs.feedback. Choose a JSON file containing this field.';
+  if (failed) status.append(document.createTextNode(` ${failed} file${failed === 1 ? '' : 's'} could not be read. `), button('Retry', () => { metadataLoaded = false; $('#metadata-files').replaceChildren(); loadMetadata(); }));
+}
+function selectView(name) {
+  for (const view of ['trajectories', 'metadata']) {
+    const active = name === view;
+    const tab = $(`#${view}-tab`);
+    tab.setAttribute('aria-selected', String(active)); tab.tabIndex = active ? 0 : -1;
+    $(`#${view}-panel`).hidden = !active;
+  }
+  if (name === 'metadata') loadMetadata();
+}
 function init() {
+  const tabs = ['trajectories', 'metadata'];
+  tabs.forEach((name, index) => {
+    const tab = $(`#${name}-tab`);
+    tab.addEventListener('click', () => selectView(name));
+    tab.addEventListener('keydown', event => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const next = event.key === 'Home' ? tabs[0] : event.key === 'End' ? tabs[1] : tabs[1 - index];
+      selectView(next); $(`#${next}-tab`).focus();
+    });
+  });
+  $('#choose-metadata').addEventListener('click', () => $('#metadata-input').click());
+  $('#metadata-input').addEventListener('change', event => {
+    const files = [...event.target.files];
+    if (files.length) setMetadataFiles(files);
+    event.target.value = '';
+  });
+  $('#metadata-paste-form').addEventListener('submit', event => {
+    event.preventDefault();
+    const text = $('#metadata-paste').value;
+    setMetadataFiles([{name: 'Pasted JSON', text: async () => text}]);
+  });
   $('#choose-folder').addEventListener('click', () => $('#folder-input').click());
   $('#folder-input').addEventListener('change', event => {
     const files = [...event.target.files];

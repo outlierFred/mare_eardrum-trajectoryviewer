@@ -15,6 +15,21 @@
 .sidebar .nav-attempt{padding-left:28px}
 .sidebar .nav-model{color:var(--muted);padding-left:28px;font-size:11px}
 .attempt,.model{scroll-margin-top:18px}
+.view-tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin:0 0 20px;padding-bottom:8px}
+.view-tabs button[aria-selected=true]{background:var(--green);color:white;border-color:var(--green)}
+.metadata-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.metadata-heading p{font-size:13px}
+.metadata-paste{display:grid;gap:10px;margin:16px 0 22px}
+.metadata-paste label{font-size:13px;font-weight:600}
+.metadata-paste textarea{width:100%;resize:vertical;min-height:100px;border:1px solid var(--line);border-radius:7px;padding:12px;font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace}
+.metadata-paste textarea:focus-visible{outline:3px solid #6da68b;outline-offset:3px}
+.metadata-paste button{justify-self:start}
+#metadata-status{font-size:13px;line-height:1.7;color:var(--muted);overflow-wrap:anywhere}
+.metadata-file{margin-top:22px}
+.metadata-filename{font-size:14px;overflow-wrap:anywhere}
+.feedback-card{background:white;border:1px solid var(--line);border-radius:9px;padding:20px;margin:14px 0}
+.feedback-card>h3{font-size:15px;margin:0 0 18px;overflow-wrap:anywhere}
+.feedback-card .payload pre{max-height:480px;overflow:auto}
 .attempt-summary{margin-bottom:20px}
 .summary-tools{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px;font-size:12px}
 .markdown-toggle{display:inline-flex;align-items:center;gap:8px;cursor:pointer}

@@ -17,6 +17,11 @@
     <nav id="navigator" aria-label="Models and attempts"><p class="muted">Choose a runs folder to browse models and attempts.</p></nav>
   </aside>
   <main>
+    <div class="view-tabs" role="tablist" aria-label="Viewer">
+      <button id="trajectories-tab" role="tab" aria-controls="trajectories-panel" aria-selected="true" type="button">Trajectories</button>
+      <button id="metadata-tab" role="tab" aria-controls="metadata-panel" aria-selected="false" tabindex="-1" type="button">Metadata</button>
+    </div>
+    <section id="trajectories-panel" role="tabpanel" aria-labelledby="trajectories-tab">
     <section class="folder-picker">
       <div><strong>Open your runs folder</strong><p>Select a local folder to explore its trajectories. Files stay on your device.</p></div>
       <button id="choose-folder" type="button">Choose runs folder</button>
@@ -25,6 +30,18 @@
     <div class="section-heading"><h2>Trajectories</h2><span id="dataset-label" class="muted"></span></div>
     <div id="status" role="status">Choose your runs folder to get started.</div>
     <div id="models"></div>
+    </section>
+    <section id="metadata-panel" role="tabpanel" aria-labelledby="metadata-tab" hidden>
+      <div class="metadata-heading"><div><h2>Validation feedback</h2><p class="muted">Read the two feedback entries from your metadata JSON.</p></div><button id="choose-metadata" type="button">Choose metadata JSON</button></div>
+      <input id="metadata-input" type="file" accept=".json,application/json" hidden aria-label="Choose metadata JSON">
+      <form id="metadata-paste-form" class="metadata-paste">
+        <label for="metadata-paste">Or paste JSON</label>
+        <textarea id="metadata-paste" rows="7" spellcheck="false" placeholder="Paste your metadata JSON here…"></textarea>
+        <button type="submit">View metadata</button>
+      </form>
+      <div id="metadata-status" role="status">Choose a metadata JSON file or paste JSON above. Everything stays on your device.</div>
+      <div id="metadata-files"></div>
+    </section>
   </main>
   </div>
 </body>

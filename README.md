@@ -51,6 +51,12 @@ Otherwise, it shows the first four folders alphabetically. Completely empty fold
 Messages preserve line breaks, indentation, and Markdown text as written.
 Summary formatting uses locally bundled Marked and DOMPurify libraries; no CDN connection is needed when viewing files.
 
+## Metadata viewer
+
+Open the **Metadata** tab, then **Choose metadata JSON** to select a single file, or paste JSON and click **View metadata**. This input is separate from the runs folder and stays on your device.
+
+The viewer reads `metadata.validationOutputs.chains[0].validations[0].outputs.feedback[0]` and `feedback[1]`. Both entries appear in separate, labeled panels. String entries and objects with `content`, `text`, or `markdown` text support the **Markdown formatting** toggle. Objects retain their complete original data under **All feedback fields**; unfamiliar object formats display as JSON. Missing entries and invalid JSON show a clear message. Switching tabs preserves your loaded content.
+
 ## Troubleshooting
 
 **No attempts found:** Check that you selected `runs/` or the dataset folder inside it, and that files are inside each model’s `prior/` folder with names such as `attempt-01-trajectory.json`.
