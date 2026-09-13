@@ -268,15 +268,15 @@ function feedbackEntries(doc) {
 }
 function feedbackNode(value, index) {
   const card = el('section', 'feedback-card');
-  const title = value && typeof value === 'object' ? [value.filename, value.fileName, value.name, value.path].find(item => typeof item === 'string' && item) : '';
-  card.append(el('h3', '', `Feedback ${index + 1}${title ? ` · ${title}` : ''}`));
+  const title = value && typeof value === 'object' ? [value.taxonomy, value.filename, value.fileName, value.name, value.path].find(item => typeof item === 'string' && item) : '';
+  card.append(el('h3', '', `Check ${index + 1}${title ? ` · ${title}` : ''}`));
   if (value === undefined || value === null) {
     card.append(el('div', 'notice', 'This feedback entry is not present.'));
     return card;
   }
   let text = value;
   if (typeof value !== 'string') {
-    text = [value.content, value.text, value.markdown].find(item => typeof item === 'string');
+    text = [value.reasoning, value.content, value.text, value.markdown].find(item => typeof item === 'string');
     if (text === undefined) {
       // Preserve every field when an entry has an unfamiliar structure.
       card.append(el('pre', 'summary-raw', JSON.stringify(value, null, 2)));

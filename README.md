@@ -55,7 +55,7 @@ Summary formatting uses locally bundled Marked and DOMPurify libraries; no CDN c
 
 Open the **Metadata** tab, then **Choose metadata JSON** to select a single file, or paste JSON and click **View metadata**. This input is separate from the runs folder and stays on your device.
 
-The viewer reads `metadata.validationOutputs.chains[0].validations[0].outputs.feedback[0]` and `feedback[1]`. Both entries appear in separate, labeled panels. String entries and objects with `content`, `text`, or `markdown` text support the **Markdown formatting** toggle. Objects retain their complete original data under **All feedback fields**; unfamiliar object formats display as JSON. Missing entries and invalid JSON show a clear message. Switching tabs preserves your loaded content.
+The viewer reads `metadata.validationOutputs.chains[0].validations[0].outputs.feedback[0]` and `feedback[1]`. Each entry's `taxonomy` supplies the check name and its `reasoning` supplies the content, with a **Markdown formatting** toggle. String entries and objects with `content`, `text`, or `markdown` text are also supported. Objects retain their complete original data under **All feedback fields**; unfamiliar object formats display as JSON. Missing entries and invalid JSON show a clear message. Switching tabs preserves your loaded content.
 
 ## Troubleshooting
 
