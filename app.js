@@ -264,7 +264,7 @@ function renderModels(models) {
   });
 }
 function feedbackEntries(doc) {
-  return doc?.metadata?.validationOutputs?.chains?.[0]?.validations?.[0]?.outputs?.feedback;
+  return doc?.metadata?.validationOutputs?.chains?.[0]?.validations?.[0]?.outputs?.feedbacks;
 }
 function feedbackNode(value, index) {
   const card = el('section', 'feedback-card');
@@ -324,7 +324,7 @@ async function loadMetadata() {
     }
   }
   if (generation !== metadataGeneration) return;
-  status.textContent = found ? `${found} JSON file${found === 1 ? '' : 's'} with validation feedback.` : 'No validation feedback found at metadata.validationOutputs.chains[0].validations[0].outputs.feedback. Choose a JSON file containing this field.';
+  status.textContent = found ? `${found} JSON file${found === 1 ? '' : 's'} with validation feedback.` : 'No validation feedback found at metadata.validationOutputs.chains[0].validations[0].outputs.feedbacks. Choose a JSON file containing this field.';
   if (failed) status.append(document.createTextNode(` ${failed} file${failed === 1 ? '' : 's'} could not be read. `), button('Retry', () => { metadataLoaded = false; $('#metadata-files').replaceChildren(); loadMetadata(); }));
 }
 function selectView(name) {
