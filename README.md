@@ -22,11 +22,16 @@ runs/
     └── <model>/
         └── prior/
             ├── attempt-01-trajectory.json
+            ├── attempt-01-artifacts/
+            │   └── logs/artifacts/summary.md
             ├── attempt-02-trajectory.json
+            ├── attempt-02-artifacts/
+            │   └── logs/artifacts/summary.md
             └── ...
 ```
 
 Each model can have any number of attempts. Attempts appear in numeric order.
+Optional summaries are matched to trajectories in the same dataset and model by attempt number. The `attempt-NN-artifacts` folder increments with each attempt. Missing summaries do not prevent trajectories from loading.
 
 When the four model folders are present, the viewer shows them in this order:
 
@@ -41,8 +46,10 @@ Otherwise, it shows the first four folders alphabetically. Completely empty fold
 - **Search an attempt** across its messages, tools, and other fields, or filter steps by source. Search includes collapsed steps.
 - **Browse all steps** immediately when an attempt opens. Steps start collapsed; click a step to read it, or use **Expand steps** and **Collapse steps** for the current filtered list. Use **Show full content** to remove the height limit on long messages.
 - **Inspect additional fields** through the step and session details, or use **Download JSON** to save the original file.
+- **Read attempt summaries** in the separate expandable **Attempt NN · Summary** panel immediately after each trajectory. Summaries load when expanded, independently of the trajectory. **Markdown formatting** starts on; turn it off to view the exact source text. Headings, lists, tables, links, and code blocks are supported. Embedded active content and images are excluded; external links open only when clicked.
 
 Messages preserve line breaks, indentation, and Markdown text as written.
+Summary formatting uses locally bundled Marked and DOMPurify libraries; no CDN connection is needed when viewing files.
 
 ## Troubleshooting
 

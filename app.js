@@ -103,6 +103,62 @@ function renderReader(body, doc, attempt) {
   search.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(filter, 150); });
   source.addEventListener('change', filter); filter();
 }
+function summaryNode(attempt) {
+  const card = el('details', 'attempt attempt-summary');
+  const heading = el('summary');
+  const names = el('div');
+  const match = attempt.name.match(/attempt-(\d+)/);
+  names.append(el('div', 'attempt-title', `${match ? `Attempt ${match[1]}` : attempt.name} · Summary`),
+    el('div', 'attempt-name', attempt.summaryFile.webkitRelativePath));
+  heading.append(el('span', 'chevron', '›'), names);
+  const body = el('div', 'attempt-body');
+  card.append(heading, body);
+  let loaded = false, loading = false;
+  async function load() {
+    if (loaded || loading) return;
+    loading = true;
+    body.replaceChildren(el('div', 'notice', 'Loading summary…'));
+    try {
+      const text = await attempt.summaryFile.text();
+      if (!card.isConnected) return;
+      const controls = el('div', 'summary-tools');
+      const label = el('label', 'markdown-toggle');
+      const toggle = el('input'); toggle.type = 'checkbox'; toggle.checked = true;
+      label.append(toggle, document.createTextNode('Markdown formatting'));
+      const content = el('div', 'summary-content');
+      const canFormat = !!(globalThis.marked && globalThis.DOMPurify);
+      toggle.disabled = !canFormat; toggle.checked = canFormat;
+      function render() {
+        content.replaceChildren();
+        if (!text.trim()) { content.append(el('div', 'notice', 'This summary is empty.')); return; }
+        if (toggle.checked) {
+          const formatted = el('div', 'markdown-body');
+          formatted.append(DOMPurify.sanitize(marked.parse(text), {
+            RETURN_DOM_FRAGMENT: true,
+            ALLOWED_TAGS: ['p', 'br', 'hr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'em', 'del', 's', 'blockquote', 'ul', 'ol', 'li', 'pre', 'code', 'a', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'input'],
+            ALLOWED_ATTR: ['href', 'title', 'start', 'align', 'type', 'checked', 'disabled'],
+          }));
+          formatted.querySelectorAll('input').forEach(input => { input.type = 'checkbox'; input.disabled = true; });
+          formatted.querySelectorAll('a').forEach(link => {
+            const href = link.getAttribute('href') || '';
+            if (!/^(https?:\/\/|mailto:)/i.test(href)) link.removeAttribute('href');
+            else { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
+          });
+          content.append(formatted);
+        } else content.append(el('pre', 'summary-raw', text));
+      }
+      toggle.addEventListener('change', render);
+      controls.append(label);
+      body.replaceChildren(controls, content);
+      if (!canFormat) controls.append(el('span', 'muted', 'Markdown formatting unavailable; showing original text.'));
+      render(); loaded = true;
+    } catch (error) {
+      body.replaceChildren(el('div', 'notice error', `Could not load this summary: ${error.message}`), button('Retry', load));
+    } finally { loading = false; }
+  }
+  card.addEventListener('toggle', () => { if (card.open) load(); });
+  return card;
+}
 function attemptNode(attempt) {
   const card = el('details', 'attempt'); const summary = el('summary');
   const names = el('div');
@@ -138,6 +194,7 @@ function validateTrajectory(doc) {
 }
 function discover(files) {
   const groups = new Map();
+  const byPath = new Map(files.map(file => [file.webkitRelativePath, file]));
   for (const file of files) {
     const parts = file.webkitRelativePath.split('/');
     // The dataset folder name is arbitrary; accept runs/ or the dataset itself.
@@ -147,7 +204,8 @@ function discover(files) {
     if (!groups.has(model)) groups.set(model, []);
     const match = file.name.match(/^attempt-(\d+)-trajectory\.json$/);
     if (parts.length === base + 3 && parts[base + 1] === 'prior' && match) {
-      groups.get(model).push({name: file.name, source: file.webkitRelativePath, file});
+      const summaryPath = [...parts.slice(0, -1), `attempt-${match[1]}-artifacts`, 'logs', 'artifacts', 'summary.md'].join('/');
+      groups.get(model).push({name: file.name, source: file.webkitRelativePath, file, summaryFile: byPath.get(summaryPath)});
     }
   }
   const names = PREFERRED.every(name => groups.has(name)) ? PREFERRED : [...groups.keys()].sort().slice(0, 4);
@@ -183,6 +241,7 @@ function renderModels(models) {
     model.attempts.forEach((attempt, attemptIndex) => {
       const card = attemptNode(attempt); card.id = `attempt-${modelIndex}-${attemptIndex}`;
       section.append(card);
+      if (attempt.summaryFile) section.append(summaryNode(attempt));
       const match = attempt.name.match(/attempt-(\d+)/);
       const link = button(match ? `Attempt ${match[1]}` : attempt.name, () => {
         select(link, modelIndex);
